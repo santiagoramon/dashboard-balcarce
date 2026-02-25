@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard BALCARCE — Conectado a FUDO</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f7f6f2;--surface:#fff;--border:#e9e5de;
+  --text:#1c1a16;--muted:#888074;--accent:#bf4a1a;
+  --accent2:#2c5f8a;--green:#2e6b4e;--gold:#b08c2a;
+  --radius:14px;--shadow:0 2px 12px rgba(0,0,0,0.06)
+}
+body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+
+/* ── LOGIN FUDO ── */
+#login-screen{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;padding:40px 20px;background:var(--bg)}
+.login-logo{font-family:'Playfair Display',serif;font-size:36px;letter-spacing:-1px;text-align:center}
+.login-logo span{color:var(--accent)}
+.login-logo small{display:block;font-size:14px;color:var(--muted);font-family:'Lato',sans-serif;font-weight:400;letter-spacing:.05em;margin-top:4px}
+.login-card{background:var(--surface);border-radius:20px;padding:36px 40px;border:1px solid var(--border);box-shadow:0 4px 32px rgba(0,0,0,0.08);width:100%;max-width:480px;display:flex;flex-direction:column;gap:20px}
+.login-card h2{font-family:'Playfair Display',serif;font-size:20px;margin-bottom:4px}
+.login-card p{font-size:13px;color:var(--muted);line-height:1.7}
+.field{display:flex;flex-direction:column;gap:6px}
+.field label{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+.field input{padding:11px 14px;border:1.5px solid var(--border);border-radius:10px;font-family:'Lato',sans-serif;font-size:14px;outline:none;transition:border-color .2s;background:var(--bg)}
+.field input:focus{border-color:var(--accent);background:#fff}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.btn-connect{background:var(--accent);color:#fff;border:none;padding:13px;border-radius:11px;font-family:'Lato',sans-serif;font-size:15px;font-weight:700;cursor:pointer;transition:background .2s;width:100%}
+.btn-connect:hover{background:#a83d12}
+.btn-connect:disabled{background:var(--muted);cursor:wait}
+.login-hint{font-size:12px;color:var(--muted);background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 18px;max-width:480px;width:100%;line-height:1.9}
+.login-hint strong{color:var(--text)}
+.login-hint a{color:var(--accent);text-decoration:none}
+#login-error{display:none;background:#fdf0eb;border:1px solid #f0c4ab;color:var(--accent);padding:12px 16px;border-radius:10px;font-size:13px;text-align:center}
+.step-badge{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:var(--accent);color:#fff;font-size:11px;font-weight:700;margin-right:6px;flex-shrink:0}
+
+/* ── DASHBOARD ── */
+#dashboard-screen{display:none}
+header{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 32px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;gap:12px;flex-wrap:wrap}
+.logo{font-family:'Playfair Display',serif;font-size:20px;white-space:nowrap}.logo span{color:var(--accent)}
+.header-center{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.date-input{padding:7px 12px;border:1.5px solid var(--border);border-radius:9px;font-family:'Lato',sans-serif;font-size:13px;outline:none;background:var(--bg);color:var(--text);transition:border-color .2s}
+.date-input:focus{border-color:var(--accent)}
+.btn-refresh{background:var(--accent);color:#fff;border:none;padding:7px 18px;border-radius:9px;font-family:'Lato',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:background .2s;white-space:nowrap}
+.btn-refresh:hover{background:#a83d12}
+.btn-refresh:disabled{background:var(--muted);cursor:wait}
+.fudo-badge{font-size:12px;color:var(--green);background:#f0f7f3;border:1px solid #c8e6d5;padding:5px 12px;border-radius:20px;font-weight:700;white-space:nowrap}
+.header-right{display:flex;align-items:center;gap:10px}
+.btn-pdf{background:var(--accent2);color:#fff;border:none;padding:7px 16px;border-radius:9px;font-family:'Lato',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:background .2s}
+.btn-pdf:hover{background:#244d72}
+.btn-pdf:disabled{background:var(--muted);cursor:wait}
+.btn-logout{background:transparent;border:1.5px solid var(--border);padding:6px 14px;border-radius:9px;font-family:'Lato',sans-serif;font-size:12px;font-weight:700;cursor:pointer;color:var(--muted);transition:all .2s}
+.btn-logout:hover{border-color:var(--accent);color:var(--accent)}
+
+/* Loading overlay */
+#loading-overlay{display:none;position:fixed;inset:0;background:rgba(247,246,242,0.85);z-index:999;flex-direction:column;align-items:center;justify-content:center;gap:18px;backdrop-filter:blur(4px)}
+#loading-overlay.show{display:flex}
+.spinner{width:48px;height:48px;border:4px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite}
+.loading-text{font-family:'Playfair Display',serif;font-size:18px;color:var(--text)}
+.loading-sub{font-size:13px;color:var(--muted)}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+main{max-width:1280px;margin:0 auto;padding:28px 24px;display:flex;flex-direction:column;gap:24px}
+.section-label{font-family:'Playfair Display',serif;font-size:18px;margin-bottom:14px;display:flex;align-items:center;gap:10px}
+.section-label::after{content:'';flex:1;height:1px;background:var(--border)}
+.kpi-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:14px}
+.kpi-grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.kpi-grid-rent{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:18px}
+.kpi-card{background:var(--surface);border-radius:var(--radius);padding:20px;border:1px solid var(--border);box-shadow:var(--shadow);position:relative;overflow:hidden;transition:transform .2s;animation:fadeUp .4s ease both}
+.kpi-card:hover{transform:translateY(-2px)}
+.kpi-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.kpi-card.c1::before{background:var(--accent)}.kpi-card.c2::before{background:var(--gold)}.kpi-card.c3::before{background:var(--green)}.kpi-card.c4::before{background:var(--accent2)}.kpi-card.c5::before{background:#8b5cf6}
+.kpi-card.resultado{border:2px solid}.kpi-card.resultado.pos{border-color:var(--green);background:#f0f7f3}.kpi-card.resultado.neg{border-color:var(--accent);background:#fdf0eb}
+.kpi-emoji{font-size:22px;margin-bottom:10px}.kpi-label{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:700;margin-bottom:4px}
+.kpi-value{font-family:'Playfair Display',serif;font-size:26px;letter-spacing:-.5px;line-height:1}.kpi-sub{font-size:12px;color:var(--muted);margin-top:6px}
+.card{background:var(--surface);border-radius:var(--radius);padding:24px;border:1px solid var(--border);box-shadow:var(--shadow);animation:fadeUp .5s ease both}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.card-label{font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin-bottom:14px}
+.rtable{width:100%;border-collapse:collapse}
+.rtable th{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700;padding:8px 10px;text-align:left;border-bottom:2px solid var(--border)}
+.rtable th.r{text-align:right}.rtable td{padding:9px 10px;font-size:13px;border-bottom:1px solid var(--border);vertical-align:middle}
+.rtable tr:last-child td{border-bottom:none}.rtable tr:hover td{background:var(--bg)}
+.rnum{font-family:'Playfair Display',serif;font-size:18px;color:#d0c9be;width:28px}.rbold{font-weight:700}
+.rmoney{text-align:right;font-weight:700;color:var(--green);white-space:nowrap}
+.rmoney-red{text-align:right;font-weight:700;color:var(--accent);white-space:nowrap}
+.rqty{text-align:right;color:var(--muted);font-size:12px}.rblue{text-align:right;font-size:12px;color:var(--accent2);font-weight:700}
+.barcell{width:80px}.barwrap{width:70px;height:5px;background:var(--border);border-radius:4px;overflow:hidden}
+.barfill{height:100%;border-radius:4px;background:var(--accent);transition:width .6s ease}
+.scroller{max-height:360px;overflow-y:auto}
+.scroller::-webkit-scrollbar{width:4px}.scroller::-webkit-scrollbar-track{background:var(--bg)}.scroller::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+.pago-list{list-style:none;display:flex;flex-direction:column;gap:12px}
+.pago-item{display:flex;align-items:center;gap:12px}
+.pago-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.pago-name{flex:1;font-size:13px;font-weight:700}
+.pago-bwrap{flex:2;height:7px;background:var(--border);border-radius:4px;overflow:hidden}
+.pago-bar{height:100%;border-radius:4px}
+.pago-pct{font-size:13px;font-weight:700;min-width:36px;text-align:right}
+.pago-amt{font-size:12px;color:var(--muted);min-width:80px;text-align:right}
+.daily-best td{background:#fdf5f1!important;font-weight:700}
+.dmoney{text-align:right;font-weight:700;color:var(--green)}.dqty{text-align:right;color:var(--muted);font-size:12px}.davg{text-align:right;font-size:12px;color:var(--accent2);font-weight:600}
+.franja-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.franja-card{border-radius:12px;padding:16px;border:1.5px solid var(--border);background:var(--bg)}
+.franja-card.valle{border-color:var(--accent);background:#fdf0eb}
+.usd-box{background:#fdf9f0;border:2px solid var(--gold);border-radius:12px;padding:18px 28px;text-align:center;min-width:160px}
+.empty-state{text-align:center;padding:40px;color:var(--muted);font-size:14px}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:1100px){.kpi-grid{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:900px){.two-col{grid-template-columns:1fr}.kpi-grid-rent{grid-template-columns:1fr 1fr}.franja-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:600px){.kpi-grid{grid-template-columns:repeat(2,1fr)};header{padding:12px 16px};main{padding:16px}}
+</style>
+</head>
+<body>
+
+<!-- LOADING -->
+<div id="loading-overlay">
+  <div class="spinner"></div>
+  <div class="loading-text">Consultando FUDO...</div>
+  <div class="loading-sub" id="loading-sub">Obteniendo datos de ventas</div>
+</div>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-logo">Dashboard <span>BALCARCE</span><small>Conexión en tiempo real con FUDO</small></div>
+
+  <div class="login-card">
+    <div>
+      <h2>Conectar con tu cuenta FUDO</h2>
+      <p>Ingresá los datos de tu cuenta para ver el dashboard actualizado en tiempo real.</p>
+    </div>
+
+    <div class="field">
+      <label>🏠 Subdominio de tu cuenta</label>
+      <input type="text" id="inp-subdomain" placeholder="turestaurante (de turestaurante.fu.do)" autocomplete="off">
+    </div>
+
+    <div class="field">
+      <label>🔑 API Token (API Secret)</label>
+      <input type="password" id="inp-token" placeholder="Tu token de la API de propósito general">
+    </div>
+
+    <div class="field-row">
+      <div class="field">
+        <label>📅 Desde</label>
+        <input type="date" id="inp-desde" class="date-input">
+      </div>
+      <div class="field">
+        <label>📅 Hasta</label>
+        <input type="date" id="inp-hasta" class="date-input">
+      </div>
+    </div>
+
+    <div id="login-error"></div>
+
+    <button class="btn-connect" id="btn-connect" onclick="conectar()">Conectar y ver dashboard →</button>
+  </div>
+
+  <div class="login-hint">
+    <strong>¿Cómo obtener el token?</strong><br>
+    <span class="step-badge">1</span> Mandá un mail a <strong>soporte@fu.do</strong> pidiendo activar la "API de propósito general"<br>
+    <span class="step-badge">2</span> Una vez activada, ir a <strong>Administración → Usuarios</strong> en tu cuenta FUDO<br>
+    <span class="step-badge">3</span> Clic en <strong>"Establecer API Secret"</strong> → copiá el token generado<br>
+    <span class="step-badge">4</span> Pegalo arriba junto con tu subdominio (ej: <code>balcarce</code> si tu URL es <code>balcarce.fu.do</code>)
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard-screen">
+  <header>
+    <div class="logo">Dashboard <span>BALCARCE</span></div>
+    <div class="header-center">
+      <input type="date" id="hdr-desde" class="date-input">
+      <span style="color:var(--muted);font-size:13px">→</span>
+      <input type="date" id="hdr-hasta" class="date-input">
+      <button class="btn-refresh" id="btn-refresh" onclick="cargarDatos()">🔄 Actualizar</button>
+      <div class="fudo-badge" id="fudo-badge">● FUDO en vivo</div>
+    </div>
+    <div class="header-right">
+      <button class="btn-pdf" onclick="exportPDF()">⬇ PDF</button>
+      <button class="btn-logout" onclick="cerrarSesion()">↩ Salir</button>
+    </div>
+  </header>
+
+  <main id="main-content">
+
+    <!-- KPIs VENTAS -->
+    <div>
+      <div class="section-label">Resumen de ventas</div>
+      <div class="kpi-grid">
+        <div class="kpi-card c1"><div class="kpi-emoji">💰</div><div class="kpi-label">Total facturado</div><div class="kpi-value" id="k-total">—</div><div class="kpi-sub" id="k-total-s"></div></div>
+        <div class="kpi-card c2"><div class="kpi-emoji">🧾</div><div class="kpi-label">Ticket promedio</div><div class="kpi-value" id="k-ticket">—</div><div class="kpi-sub" id="k-ticket-s"></div></div>
+        <div class="kpi-card c3"><div class="kpi-emoji">📋</div><div class="kpi-label">Transacciones</div><div class="kpi-value" id="k-trans">—</div><div class="kpi-sub" id="k-trans-s"></div></div>
+        <div class="kpi-card c4"><div class="kpi-emoji">📅</div><div class="kpi-label">Promedio diario</div><div class="kpi-value" id="k-prom">—</div><div class="kpi-sub" id="k-prom-s"></div></div>
+        <div class="kpi-card c5"><div class="kpi-emoji">🏆</div><div class="kpi-label">Mejor día</div><div class="kpi-value" id="k-best" style="font-size:18px;padding-top:4px">—</div><div class="kpi-sub" id="k-best-s"></div></div>
+      </div>
+    </div>
+
+    <!-- VENTAS DIARIAS -->
+    <div>
+      <div class="section-label">Ventas día por día</div>
+      <div class="two-col">
+        <div class="card"><canvas id="chartDiario" height="220"></canvas></div>
+        <div class="card">
+          <div class="scroller">
+            <table class="rtable">
+              <thead><tr><th>Fecha</th><th>Día</th><th class="r">Facturado</th><th class="r">Tickets</th><th class="r">Prom.</th></tr></thead>
+              <tbody id="daily-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- HORARIO -->
+    <div id="sec-horario" style="display:none">
+      <div class="section-label">Ventas por franja horaria</div>
+      <div class="two-col">
+        <div class="card"><div class="card-label">💰 Facturación por hora</div><canvas id="chartHorario" height="200"></canvas></div>
+        <div class="card"><div class="card-label">🔢 Tickets por hora</div><canvas id="chartHorarioT" height="200"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-label">⏰ Resumen por franja</div>
+        <div class="franja-grid" id="franja-grid"></div>
+      </div>
+    </div>
+
+    <!-- MEDIOS DE PAGO -->
+    <div>
+      <div class="section-label">Medios de pago</div>
+      <div class="two-col">
+        <div class="card"><ul class="pago-list" id="pago-list"></ul></div>
+        <div class="card" style="display:flex;align-items:center;justify-content:center;min-height:220px">
+          <canvas id="chartPagos" style="max-height:240px"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- CAMAREROS -->
+    <div>
+      <div class="section-label">Ranking de camareros / repartidores</div>
+      <div class="two-col">
+        <div class="card">
+          <div class="scroller">
+            <table class="rtable">
+              <thead><tr><th>#</th><th>Camarero</th><th class="r">Total $</th><th class="r">Ventas</th><th class="r">Promedio</th><th></th></tr></thead>
+              <tbody id="cam-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card"><canvas id="chartCam" height="240"></canvas></div>
+      </div>
+    </div>
+
+    <!-- PRODUCTOS -->
+    <div>
+      <div class="section-label">Ranking de productos</div>
+      <div class="two-col">
+        <div class="card">
+          <div class="card-label">📈 Por facturación ($)</div>
+          <div class="scroller">
+            <table class="rtable">
+              <thead><tr><th>#</th><th>Producto</th><th class="r">Total $</th><th class="r">Uds.</th><th></th></tr></thead>
+              <tbody id="prod-fact-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-label">🔢 Por cantidad vendida</div>
+          <div class="scroller">
+            <table class="rtable">
+              <thead><tr><th>#</th><th>Producto</th><th class="r">Uds.</th><th class="r">Total $</th><th></th></tr></thead>
+              <tbody id="prod-cant-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+const COLORS=['#bf4a1a','#2c5f8a','#2e6b4e','#b08c2a','#8b5cf6','#0ea5e9','#f59e0b','#ec4899','#14b8a6','#f43f5e'];
+const DIAS_FULL=['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+let charts={}, apiConfig={};
+
+const fmt=n=>isNaN(n)?'$0':'$'+Math.round(n).toLocaleString('es-AR');
+
+// Setear fechas por defecto: mes actual
+function initFechas(){
+  const hoy=new Date();
+  const primerDia=new Date(hoy.getFullYear(),hoy.getMonth(),1);
+  const toISO=d=>d.toISOString().slice(0,10);
+  document.getElementById('inp-desde').value=toISO(primerDia);
+  document.getElementById('inp-hasta').value=toISO(hoy);
+  document.getElementById('hdr-desde').value=toISO(primerDia);
+  document.getElementById('hdr-hasta').value=toISO(hoy);
+}
+initFechas();
+
+// ── LLAMADAS A LA API FUDO ──
+// Desde GitHub Pages (HTTPS) el navegador permite llamadas directas a APIs externas.
+// FUDO debe tener CORS habilitado para tu dominio — si da error, ver nota abajo.
+async function fudoFetch(endpoint, params={}) {
+  const base = `https://${apiConfig.subdomain}.fu.do/api/v1`;
+  const qs = new URLSearchParams(params).toString();
+  const targetUrl = `${base}${endpoint}${qs?'?'+qs:''}`;
+
+  const res = await fetch(targetUrl, {
+    headers: {
+      'Authorization': `Bearer ${apiConfig.token}`,
+      'Content-Type': 'application/json',
+      'Accept': 'application/json'
+    }
+  });
+
+  if (res.status === 401) throw new Error('401: Token inválido o vencido. Generá uno nuevo en FUDO → Administración → Usuarios.');
+  if (res.status === 403) throw new Error('403: Sin permisos. Verificá que la API de propósito general esté activada en tu cuenta.');
+  if (res.status === 404) throw new Error('404: Subdominio no encontrado. Escribí solo el nombre, sin .fu.do (ej: balcarce).');
+  if (!res.ok) {
+    const txt = await res.text();
+    throw new Error(`Error ${res.status}: ${txt.slice(0,300)}`);
+  }
+  return res.json();
+}
+
+// Paginación automática — FUDO devuelve páginas de 100 registros
+async function fudoFetchAll(endpoint, params={}) {
+  let page = 1, all = [];
+  while (true) {
+    const data = await fudoFetch(endpoint, {...params, page, per_page: 100});
+    const items = data.data || data.orders || data.items || data || [];
+    if (!Array.isArray(items) || items.length === 0) break;
+    all = all.concat(items);
+    if (items.length < 100) break;
+    page++;
+  }
+  return all;
+}
+
+async function conectar() {
+  const subdomain = document.getElementById('inp-subdomain').value.trim();
+  const token = document.getElementById('inp-token').value.trim();
+  const desde = document.getElementById('inp-desde').value;
+  const hasta = document.getElementById('inp-hasta').value;
+  const errEl = document.getElementById('login-error');
+
+  if (!subdomain) return mostrarError('Ingresá tu subdominio de FUDO');
+  if (!token) return mostrarError('Ingresá tu API Token');
+  if (!desde || !hasta) return mostrarError('Seleccioná el rango de fechas');
+
+  errEl.style.display='none';
+  const btn = document.getElementById('btn-connect');
+  btn.disabled=true; btn.textContent='Conectando...';
+
+  apiConfig = { subdomain, token };
+  document.getElementById('hdr-desde').value = desde;
+  document.getElementById('hdr-hasta').value = hasta;
+
+  try {
+    await cargarDatos();
+    // Guardar en sessionStorage para no pedir de nuevo si recarga
+    sessionStorage.setItem('fudo_cfg', JSON.stringify({subdomain, token}));
+    document.getElementById('login-screen').style.display='none';
+    document.getElementById('dashboard-screen').style.display='block';
+  } catch(err) {
+    console.error('Error completo:', err);
+    let msg = err.message;
+    if (msg.includes('401') || msg.includes('403')) msg = 'Token inválido o sin permisos. Verificá que copiaste bien el API Secret de FUDO.';
+    else if (msg.includes('404')) msg = 'Subdominio no encontrado. Verificá que escribiste bien tu subdominio (sin .fu.do).';
+    else if (msg.includes('Failed to fetch') || msg.includes('Load failed') || msg.includes('proxies fallaron')) msg = 'No se pudo conectar al proxy CORS. Verificá tu conexión a internet e intentá de nuevo.';
+    mostrarError(msg);
+  }
+
+  btn.disabled=false; btn.textContent='Conectar y ver dashboard →';
+}
+
+function mostrarError(msg) {
+  const el = document.getElementById('login-error');
+  el.textContent='⚠️ '+msg;
+  el.style.display='block';
+}
+
+function setLoading(show, sub='') {
+  const el = document.getElementById('loading-overlay');
+  el.classList.toggle('show', show);
+  if(sub) document.getElementById('loading-sub').textContent=sub;
+}
+
+async function cargarDatos() {
+  const desde = document.getElementById('hdr-desde').value || document.getElementById('inp-desde').value;
+  const hasta = document.getElementById('hdr-hasta').value || document.getElementById('inp-hasta').value;
+  const btn = document.getElementById('btn-refresh');
+  if(btn) { btn.disabled=true; btn.textContent='⏳ Cargando...'; }
+
+  setLoading(true, 'Obteniendo órdenes de ventas...');
+
+  try {
+    // Obtener órdenes cerradas en el período
+    // FUDO endpoint: GET /orders con filtros de fecha
+    setLoading(true, 'Descargando órdenes...');
+    const ordenes = await fudoFetchAll('/orders', {
+      state: 'closed',
+      from: desde,
+      to: hasta
+    });
+
+    setLoading(true, 'Procesando productos vendidos...');
+    // Obtener detalle de productos desde order_items
+    // Intentar endpoint /reports/sales o /order_items
+    let orderItems = [];
+    try {
+      orderItems = await fudoFetchAll('/order_items', { from: desde, to: hasta });
+    } catch(e) {
+      // Si no existe ese endpoint, extraer de las órdenes
+      ordenes.forEach(o => {
+        if (o.items) orderItems = orderItems.concat(o.items.map(i=>({...i, order_id: o.id, created_at: o.created_at})));
+      });
+    }
+
+    setLoading(true, 'Armando el dashboard...');
+    buildDashboard(ordenes, orderItems, desde, hasta);
+
+  } catch(err) {
+    setLoading(false);
+    alert('Error al cargar datos de FUDO: ' + err.message);
+    console.error(err);
+  }
+
+  setLoading(false);
+  if(btn) { btn.disabled=false; btn.textContent='🔄 Actualizar'; }
+}
+
+function buildDashboard(ordenes, orderItems, desde, hasta) {
+  if (!ordenes.length) {
+    document.getElementById('main-content').innerHTML = `
+      <div class="empty-state">
+        <div style="font-size:48px;margin-bottom:16px">📭</div>
+        <div style="font-family:'Playfair Display',serif;font-size:20px;margin-bottom:8px">Sin datos en este período</div>
+        <div>No se encontraron órdenes cerradas entre ${desde} y ${hasta}</div>
+      </div>`;
+    return;
+  }
+
+  // Normalizar ordenes de FUDO
+  // FUDO devuelve: id, total, created_at, payment_methods, waiter (o employee), items
+  const ventas = ordenes.map(o => {
+    const total = parseFloat(o.total || o.amount || 0);
+    const pago = extraerMedioPago(o);
+    const totalNeto = pago.toLowerCase() === 'efectivo' ? total : total * 0.92;
+    const fecha = new Date(o.created_at || o.date);
+    const hora = fecha.getHours();
+    const camarero = o.waiter?.name || o.employee?.name || o.user?.name || 'Sin datos';
+    return { fecha, total, totalNeto, pago, hora, camarero };
+  }).filter(v => v.fecha && v.total > 0);
+
+  const totalFact  = ventas.reduce((s,r)=>s+r.totalNeto,0);
+  const totalBruto = ventas.reduce((s,r)=>s+r.total,0);
+  const totalComisiones = totalBruto - totalFact;
+  const totalTrans = ventas.length;
+  const ticket = totalTrans ? totalFact/totalTrans : 0;
+
+  // Agrupar por día
+  const porDia={}, ticketsDia={};
+  ventas.forEach(r=>{
+    const k=dateKey(r.fecha); if(!k) return;
+    porDia[k]=(porDia[k]||0)+r.totalNeto;
+    if(!ticketsDia[k]) ticketsDia[k]=[];
+    ticketsDia[k].push(r.totalNeto);
+  });
+  const diasUnicos=Object.keys(porDia);
+  const promDiario=diasUnicos.length?totalFact/diasUnicos.length:0;
+  const mejorDia=Object.entries(porDia).sort((a,b)=>b[1]-a[1])[0];
+
+  // KPIs
+  document.getElementById('k-total').textContent=fmt(totalFact);
+  document.getElementById('k-total-s').textContent='Neto tras comisiones · '+diasUnicos.length+' días';
+  document.getElementById('k-ticket').textContent=fmt(ticket);
+  document.getElementById('k-ticket-s').textContent='Ticket promedio neto';
+  document.getElementById('k-trans').textContent=totalTrans.toLocaleString('es-AR');
+  document.getElementById('k-trans-s').textContent='Bruto: '+fmt(totalBruto)+' · Comisiones: '+fmt(totalComisiones);
+  document.getElementById('k-prom').textContent=fmt(promDiario);
+  document.getElementById('k-prom-s').textContent='Promedio diario neto';
+  if(mejorDia){
+    const d=new Date(mejorDia[0]+'T12:00:00');
+    document.getElementById('k-best').textContent=d.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit'});
+    document.getElementById('k-best-s').textContent=fmt(mejorDia[1]);
+  }
+
+  // Gráfico diario
+  const diasSorted=Object.entries(porDia).sort((a,b)=>a[0].localeCompare(b[0]));
+  killChart('diario');
+  const maxV=Math.max(...diasSorted.map(([,v])=>v));
+  charts['diario']=new Chart(document.getElementById('chartDiario').getContext('2d'),{
+    type:'bar',
+    data:{labels:diasSorted.map(([k])=>{const d=new Date(k+'T12:00:00');return d.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit'});}),
+      datasets:[{data:diasSorted.map(([,v])=>v),backgroundColor:diasSorted.map(([,v])=>v===maxV?'rgba(191,74,26,0.9)':'rgba(191,74,26,0.4)'),borderRadius:5,borderSkipped:false}]},
+    options:{responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>fmt(c.raw)}}},
+      scales:{y:{beginAtZero:true,ticks:{callback:v=>fmt(v),font:{size:10,family:'Lato'}},grid:{color:'#e9e5de'}},x:{grid:{display:false},ticks:{font:{size:10,family:'Lato'},maxRotation:45}}}}
+  });
+
+  document.getElementById('daily-tbody').innerHTML=diasSorted.map(([k,total])=>{
+    const d=new Date(k+'T12:00:00');
+    const tks=ticketsDia[k]||[];
+    const avg=tks.length?total/tks.length:0;
+    return '<tr class="'+(k===mejorDia?.[0]?'daily-best':'')+'"><td>'+d.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'2-digit'})+'</td><td>'+DIAS_FULL[d.getDay()]+'</td><td class="dmoney">'+fmt(total)+'</td><td class="dqty">'+tks.length+'</td><td class="davg">'+fmt(avg)+'</td></tr>';
+  }).join('');
+
+  // Análisis por horario
+  const ventasConHora=ventas.filter(r=>r.hora!==null&&r.hora!==undefined);
+  const secHorario=document.getElementById('sec-horario');
+  if(ventasConHora.length>0){
+    secHorario.style.display='block';
+    const horaFact={},horaTickets={};
+    for(let h=9;h<=22;h++){horaFact[h]=0;horaTickets[h]=0;}
+    ventasConHora.forEach(r=>{const h=r.hora;if(h>=9&&h<=22){horaFact[h]=(horaFact[h]||0)+r.totalNeto;horaTickets[h]=(horaTickets[h]||0)+1;}});
+    const horas=Object.keys(horaFact).map(Number).sort((a,b)=>a-b);
+    const facts=horas.map(h=>horaFact[h]);
+    const ticks=horas.map(h=>horaTickets[h]);
+    const maxF=Math.max(...facts)||1;
+    const lbls=horas.map(h=>h+':00');
+    const bcolors=facts.map(v=>{const p=v/maxF;return p>=0.7?'rgba(46,107,78,0.85)':p>=0.4?'rgba(176,140,42,0.75)':'rgba(191,74,26,0.4)';});
+    killChart('horario');
+    charts['horario']=new Chart(document.getElementById('chartHorario').getContext('2d'),{type:'bar',data:{labels:lbls,datasets:[{data:facts,backgroundColor:bcolors,borderRadius:5,borderSkipped:false}]},options:{responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>fmt(c.raw)}}},scales:{y:{beginAtZero:true,ticks:{callback:v=>fmt(v),font:{size:10,family:'Lato'}},grid:{color:'#e9e5de'}},x:{grid:{display:false},ticks:{font:{size:11,family:'Lato'}}}}}});
+    killChart('horarioT');
+    charts['horarioT']=new Chart(document.getElementById('chartHorarioT').getContext('2d'),{type:'bar',data:{labels:lbls,datasets:[{data:ticks,backgroundColor:bcolors,borderRadius:5,borderSkipped:false}]},options:{responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.raw+' tickets'}}},scales:{y:{beginAtZero:true,ticks:{font:{size:10,family:'Lato'}},grid:{color:'#e9e5de'}},x:{grid:{display:false},ticks:{font:{size:11,family:'Lato'}}}}}});
+    const franjas=[{label:'☕ Mañana',icon:'09-12hs',horas:[9,10,11]},{label:'🍽️ Almuerzo',icon:'12-15hs',horas:[12,13,14]},{label:'😴 Valle',icon:'15-18hs',horas:[15,16,17]},{label:'🌙 Cena',icon:'18-22hs',horas:[18,19,20,21,22]}];
+    const totalFactH=facts.reduce((s,v)=>s+v,0);
+    document.getElementById('franja-grid').innerHTML=franjas.map(f=>{
+      const fF=f.horas.reduce((s,h)=>s+(horaFact[h]||0),0);
+      const fT=f.horas.reduce((s,h)=>s+(horaTickets[h]||0),0);
+      const pct=totalFactH?Math.round(fF/totalFactH*100):0;
+      const isValle=f.icon==='15-18hs';
+      return '<div class="franja-card'+(isValle?' valle':'')+'"><div style="font-size:18px;margin-bottom:6px">'+f.label+'</div><div style="font-size:11px;color:var(--muted);font-weight:700;margin-bottom:8px">'+f.icon+'</div><div style="font-family:\'Playfair Display\',serif;font-size:20px;margin-bottom:2px">'+fmt(fF)+'</div><div style="font-size:12px;color:var(--muted)">'+fT+' tickets · '+pct+'% del total</div></div>';
+    }).join('');
+  } else {
+    secHorario.style.display='none';
+  }
+
+  // Medios de pago
+  const pagoMap={};
+  ventas.forEach(r=>{pagoMap[r.pago]=(pagoMap[r.pago]||0)+r.totalNeto;});
+  const pagos=Object.entries(pagoMap).sort((a,b)=>b[1]-a[1]);
+  const pagoTotal=pagos.reduce((s,[,v])=>s+v,0);
+  document.getElementById('pago-list').innerHTML=pagos.map(([nombre,monto],i)=>{
+    const pct=pagoTotal?Math.round(monto/pagoTotal*100):0;
+    const col=COLORS[i%COLORS.length];
+    return '<li class="pago-item"><div class="pago-dot" style="background:'+col+'"></div><div class="pago-name">'+nombre+'</div><div class="pago-bwrap"><div class="pago-bar" style="width:'+pct+'%;background:'+col+'"></div></div><div class="pago-pct">'+pct+'%</div><div class="pago-amt">'+fmt(monto)+'</div></li>';
+  }).join('');
+  killChart('pagos');
+  charts['pagos']=new Chart(document.getElementById('chartPagos').getContext('2d'),{type:'doughnut',data:{labels:pagos.map(([k])=>k),datasets:[{data:pagos.map(([,v])=>v),backgroundColor:pagos.map((_,i)=>COLORS[i%COLORS.length]),borderWidth:2,borderColor:'#fff'}]},options:{responsive:true,maintainAspectRatio:false,cutout:'60%',plugins:{legend:{position:'right',labels:{font:{family:'Lato',size:11},boxWidth:10,padding:12}},tooltip:{callbacks:{label:c=>c.label+': '+fmt(c.raw)+' ('+Math.round(c.raw/pagoTotal*100)+'%)'}}}}});
+
+  // Camareros
+  const camMap={};
+  ventas.forEach(r=>{const c=r.camarero||'Sin datos';if(!camMap[c])camMap[c]={total:0,count:0};camMap[c].total+=r.totalNeto;camMap[c].count++;});
+  const cams=Object.entries(camMap).sort((a,b)=>b[1].total-a[1].total);
+  const maxCam=cams[0]?.[1].total||1;
+  document.getElementById('cam-tbody').innerHTML=cams.map(([nombre,d],i)=>{
+    const avg=d.count?d.total/d.count:0;
+    return '<tr><td class="rnum">'+(i+1)+'</td><td class="rbold">'+nombre+'</td><td class="rmoney">'+fmt(d.total)+'</td><td class="rqty">'+d.count+'</td><td class="rblue">'+fmt(avg)+'</td><td class="barcell"><div class="barwrap"><div class="barfill" style="width:'+Math.round(d.total/maxCam*100)+'%;background:'+COLORS[i%COLORS.length]+'"></div></div></td></tr>';
+  }).join('');
+  killChart('cam');
+  charts['cam']=new Chart(document.getElementById('chartCam').getContext('2d'),{type:'bar',data:{labels:cams.map(([k])=>k.length>16?k.slice(0,16)+'…':k),datasets:[{data:cams.map(([,d])=>d.total),backgroundColor:cams.map((_,i)=>COLORS[i%COLORS.length]+'bb'),borderRadius:5,borderSkipped:false}]},options:{responsive:true,indexAxis:'y',plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>fmt(c.raw)}}},scales:{x:{beginAtZero:true,ticks:{callback:v=>fmt(v),font:{size:10,family:'Lato'}},grid:{color:'#e9e5de'}},y:{grid:{display:false},ticks:{font:{size:11,family:'Lato'}}}}}});
+
+  // Productos
+  const prodMap={};
+  orderItems.forEach(item=>{
+    const nombre=item.product?.name||item.name||item.description||'Producto';
+    const cant=parseFloat(item.quantity||item.qty||1);
+    const total=parseFloat(item.total||item.subtotal||item.price||0)*cant;
+    if(!prodMap[nombre])prodMap[nombre]={total:0,cantidad:0};
+    prodMap[nombre].total+=total;
+    prodMap[nombre].cantidad+=cant;
+  });
+  const pe=Object.entries(prodMap);
+  if(pe.length>0){
+    const byFact=[...pe].sort((a,b)=>b[1].total-a[1].total).slice(0,20);
+    const byCant=[...pe].sort((a,b)=>b[1].cantidad-a[1].cantidad).slice(0,20);
+    const mxF=byFact[0]?.[1].total||1,mxC=byCant[0]?.[1].cantidad||1;
+    const trunc=(s,n=30)=>s.length>n?s.slice(0,n)+'…':s;
+    document.getElementById('prod-fact-tbody').innerHTML=byFact.map(([nombre,d],i)=>'<tr><td class="rnum">'+(i+1)+'</td><td class="rbold" title="'+nombre+'">'+trunc(nombre)+'</td><td class="rmoney">'+fmt(d.total)+'</td><td class="rqty">'+Math.round(d.cantidad).toLocaleString('es-AR')+'</td><td class="barcell"><div class="barwrap"><div class="barfill" style="width:'+Math.round(d.total/mxF*100)+'%"></div></div></td></tr>').join('');
+    document.getElementById('prod-cant-tbody').innerHTML=byCant.map(([nombre,d],i)=>'<tr><td class="rnum">'+(i+1)+'</td><td class="rbold" title="'+nombre+'">'+trunc(nombre)+'</td><td class="rblue" style="text-align:right">'+Math.round(d.cantidad).toLocaleString('es-AR')+'</td><td class="rqty">'+fmt(d.total)+'</td><td class="barcell"><div class="barwrap"><div class="barfill" style="width:'+Math.round(d.cantidad/mxC*100)+'%;background:var(--accent2)"></div></div></td></tr>').join('');
+  }
+}
+
+// Extraer medio de pago de una orden FUDO
+function extraerMedioPago(orden) {
+  if (orden.payment_methods && orden.payment_methods.length > 0) {
+    return orden.payment_methods[0].name || orden.payment_methods[0].type || 'Sin datos';
+  }
+  if (orden.payment_method) return orden.payment_method;
+  if (orden.payment) return orden.payment;
+  return 'Sin datos';
+}
+
+function dateKey(d) { return d ? d.toISOString().slice(0,10) : null; }
+function killChart(id) { if(charts[id]){charts[id].destroy();delete charts[id];} }
+
+function cerrarSesion() {
+  sessionStorage.removeItem('fudo_cfg');
+  apiConfig={};
+  document.getElementById('dashboard-screen').style.display='none';
+  document.getElementById('login-screen').style.display='flex';
+}
+
+// Intentar restaurar sesión si ya había una
+window.addEventListener('load', () => {
+  const saved = sessionStorage.getItem('fudo_cfg');
+  if(saved) {
+    try {
+      const cfg = JSON.parse(saved);
+      document.getElementById('inp-subdomain').value=cfg.subdomain||'';
+      document.getElementById('inp-token').value=cfg.token||'';
+    } catch(e){}
+  }
+});
+
+// PDF Export
+async function exportPDF() {
+  const btn = document.querySelector('.btn-pdf');
+  btn.textContent='⏳...'; btn.disabled=true;
+  try {
+    const {jsPDF}=window.jspdf;
+    const pdf=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+    const pageW=210,pageH=297,margin=10,contentW=pageW-margin*2;
+    let yPos=18,pageNum=1;
+    const addHeader=()=>{
+      pdf.setFillColor(255,255,255);pdf.rect(0,0,pageW,14,'F');
+      pdf.setFont('helvetica','bold');pdf.setFontSize(13);pdf.setTextColor(191,74,26);
+      pdf.text('Dashboard BALCARCE',margin,9);
+      pdf.setFont('helvetica','normal');pdf.setFontSize(9);pdf.setTextColor(136,128,116);
+      const desde=document.getElementById('hdr-desde').value;
+      const hasta=document.getElementById('hdr-hasta').value;
+      pdf.text(desde+' → '+hasta+'  —  Pág. '+pageNum,pageW-margin,9,{align:'right'});
+      pdf.setDrawColor(233,229,222);pdf.line(margin,12,pageW-margin,12);
+    };
+    addHeader();
+    const sections=document.querySelectorAll('#main-content > div');
+    let first=true;
+    for(const sec of sections){
+      if(sec.style.display==='none') continue;
+      const canvas=await html2canvas(sec,{scale:2,useCORS:true,backgroundColor:'#f7f6f2',logging:false});
+      const imgData=canvas.toDataURL('image/jpeg',0.92);
+      const imgH=(canvas.height/canvas.width)*contentW;
+      if(yPos+imgH>pageH-margin-8&&!first){pdf.addPage();pageNum++;addHeader();yPos=18;}
+      pdf.addImage(imgData,'JPEG',margin,yPos,contentW,imgH);
+      yPos+=imgH+6;first=false;
+    }
+    pdf.setFontSize(8);pdf.setTextColor(136,128,116);
+    pdf.text('Dashboard BALCARCE — '+new Date().toLocaleDateString('es-AR'),pageW/2,pageH-5,{align:'center'});
+    const fecha=new Date().toLocaleDateString('es-AR').replace(/\//g,'-');
+    pdf.save('Dashboard-BALCARCE-'+fecha+'.pdf');
+  } catch(err){ alert('Error al generar PDF: '+err.message); }
+  btn.textContent='⬇ PDF'; btn.disabled=false;
+}
+</script>
+</body>
+</html>
